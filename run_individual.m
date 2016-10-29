@@ -46,6 +46,6 @@ for index_vedio=1:length(vedios)
     seq.opt = opt;
     %结果resul.res为最终数据
     result = run_Diagnose(seq, '', false,vedio);
-    results{1}=result
+    results{1}=result;
     save(['.\results\',vedio.name '_BASE_C.mat'],'results') ;
 end
