@@ -64,71 +64,70 @@ for f = 1:size(seq.s_frames, 1)
         if f>5
             if maxProb>0.8
                 %if (norm(pf_v-nf_v,1)>20 || norm((sign(pf_a)-sign(nf_a)))~=0)
-%                 if (norm(pf_v-nf_v,1)>10 )
-%                     p=nf_p
-%                     maxProb=0.8;
-%                 else
+                if (norm(pf_v-nf_v,1)>30 )
+                    p=nf_p
+                    %                     maxProb=0.8;
+                else
                     p=pf_p;
-%                 end
+                end
             else
-                p=nf_p
-               
+                p=nf_p;
             end
         else
             p=pf_p;
         end
-      
+        
         model.lastOutput = p;
         model.lastProb = maxProb;
         
         %计算PF的v与a
-%         pf_v=pf_p(1,1:2)-front_p(1,1:2);
-%         if f==2
-%             pf_a=0;
-%             init_pfa=pf_v;
-%         else
-%             pf_a=pf_v-init_pfa;
-%             init_pfa=pf_v;
-%         end
+        pf_v=pf_p(1,1:2)-front_p(1,1:2);
+        if f==2
+            pf_a=0;
+            init_pfa=pf_v;
+        else
+            pf_a=pf_v-init_pfa;
+            init_pfa=pf_v;
+        end
         
         %添加物理特征
         if(f==3)
             init_v=model.lastOutput(1,1:2);
-%             init_w=model.lastOutput(1,3);
-%             init_h=model.lastOutput(1,4);
+            init_w=model.lastOutput(1,3);
+            init_h=model.lastOutput(1,4);
         end
         if(f>3)
             nf_v=model.lastOutput(1,1:2)-init_v;
             init_v=model.lastOutput(1,1:2);
-%             nf_w=model.lastOutput(1,3)-init_w;
-%             init_w=model.lastOutput(1,3);
-%             nf_h=model.lastOutput(1,4)-init_h;
-%             init_h=model.lastOutput(1,4);
+            nf_w=model.lastOutput(1,3)-init_w;
+            init_w=model.lastOutput(1,3);
+            nf_h=model.lastOutput(1,4)-init_h;
+            init_h=model.lastOutput(1,4);
         end
         
         if(f==4)
             init_a=nf_v;
-%             init_aw=nf_w;
-%             init_ah=nf_h;
+            init_aw=nf_w;
+            init_ah=nf_h;
         end
         if(f>4)
             nf_a=nf_v-init_a;
             init_a=nf_v;
-%             nf_aw=nf_w-init_aw;
-%             init_aw=nf_w;
-%             nf_ah=nf_h-init_ah;
-%             init_ah=nf_h;
+            nf_aw=nf_w-init_aw;
+            init_aw=nf_w;
+            nf_ah=nf_h-init_ah;
+            init_ah=nf_h;
         end
         
         if f>5
             nf_p_v=front_p(1,1:2)+nf_v+nf_a;
-%             nf_p_w=front_p(1,3)+nf_w+nf_aw;
-%             nf_p_h=front_p(1,4)+nf_h+nf_ah;
+            nf_p_w=front_p(1,3)+nf_w+nf_aw;
+            nf_p_h=front_p(1,4)+nf_h+nf_ah;
+            %此处需修改
             nf_p=[nf_p_v,front_p(1,3),front_p(1,4)];
         end
-
         
-         maxProb
+        maxProb
         %保存当前帧p
         front_p=p;
         
