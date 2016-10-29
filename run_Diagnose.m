@@ -3,8 +3,6 @@ function results = run_Diagnose(seq, res_path, bSaveImage,vedio)
 %读入配置信息
 configGlobalParam;
 config;
-a=0;
-v=0;
 
 pathDraw = '.\tmp\imgs\';
 
@@ -58,64 +56,81 @@ for f = 1:size(seq.s_frames, 1)
         [feat, seq.opt] = globalParam.FeatureExtractor(frame, tmpl, seq.opt);
         %观测模型，计算每一特征的概率
         prob    = globalParam.ObservationModelTest(feat, model);
-        
+        %筛选出概率最大位置，作为PF输出结果
         [maxProb, maxIdx] = max(prob);
-        p = tmpl(maxIdx, :);
+        pf_p = tmpl(maxIdx, :);
         
-        
-        %粒子滤波BB位置，并计算其v与a
-        v_pf=p(1,1:2)-front_p(1,1:2);
-        a_pf=v_pf-v;
-        %计算物理特征BB位置
-        v_nf=v+a;
-        nf_p=front_p(1,1:2)+v_nf;
-        
-        
-        if(maxProb<0.8 && f>3)
-            model.lastOutput = nf_p;
-            model.lastProb = 0.8;
-        else
-            if((sign(a_pf)+ sign(a))==1 && (abs(v_pf-v_nf))>10 && f>5 )
-                model.lastOutput = nf_p;
-                model.lastProb = 0.8;
+        %选择PForNF
+        if f>5
+            if maxProb>0.8
+                %if (norm(pf_v-nf_v,1)>20 || norm((sign(pf_a)-sign(nf_a)))~=0)
+%                 if (norm(pf_v-nf_v,1)>10 )
+%                     p=nf_p
+%                     maxProb=0.8;
+%                 else
+                    p=pf_p;
+%                 end
             else
-                model.lastOutput = p;
-                model.lastProb = maxProb;  
+                p=nf_p
+               
             end
+        else
+            p=pf_p;
         end
+      
+        model.lastOutput = p;
+        model.lastProb = maxProb;
         
-        %保存当前帧p
-        front_p=model.lastOutput;
+        %计算PF的v与a
+%         pf_v=pf_p(1,1:2)-front_p(1,1:2);
+%         if f==2
+%             pf_a=0;
+%             init_pfa=pf_v;
+%         else
+%             pf_a=pf_v-init_pfa;
+%             init_pfa=pf_v;
+%         end
         
         %添加物理特征
         if(f==3)
             init_v=model.lastOutput(1,1:2);
-            init_w=model.lastOutput(1,3);
-            init_h=model.lastOutput(1,4);
-            lastOutput
+%             init_w=model.lastOutput(1,3);
+%             init_h=model.lastOutput(1,4);
         end
         if(f>3)
-            v=model.lastOutput(1,1:2)-init_v;
+            nf_v=model.lastOutput(1,1:2)-init_v;
             init_v=model.lastOutput(1,1:2);
-            w=model.lastOutput(1,3)-init_w;
-            init_w=model.lastOutput(1,3);
-            h=model.lastOutput(1,4)-init_h;
-            init_h=model.lastOutput(1,4);
+%             nf_w=model.lastOutput(1,3)-init_w;
+%             init_w=model.lastOutput(1,3);
+%             nf_h=model.lastOutput(1,4)-init_h;
+%             init_h=model.lastOutput(1,4);
         end
         
         if(f==4)
-            init_a=v;
-            init_aw=w;
-            init_ah=h;
+            init_a=nf_v;
+%             init_aw=nf_w;
+%             init_ah=nf_h;
         end
         if(f>4)
-            a=v-init_a;
-            init_a=v;
-            aw=w-init_aw;
-            init_aw=w;
-            ah=h-init_ah;
-            init_ah=h;
+            nf_a=nf_v-init_a;
+            init_a=nf_v;
+%             nf_aw=nf_w-init_aw;
+%             init_aw=nf_w;
+%             nf_ah=nf_h-init_ah;
+%             init_ah=nf_h;
         end
+        
+        if f>5
+            nf_p_v=front_p(1,1:2)+nf_v+nf_a;
+%             nf_p_w=front_p(1,3)+nf_w+nf_aw;
+%             nf_p_h=front_p(1,4)+nf_h+nf_ah;
+            nf_p=[nf_p_v,front_p(1,3),front_p(1,4)];
+        end
+
+        
+         maxProb
+        %保存当前帧p
+        front_p=p;
         
         if (strcmp(func2str(globalParam.ConfidenceJudger), 'UpdateDifferenceJudger'))
             w1 = max(round(tmpl(:, 1) - tmpl(:, 3) / 2), round(p(:, 1) - p(:, 3) / 2));
