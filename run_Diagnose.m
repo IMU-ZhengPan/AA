@@ -64,14 +64,15 @@ for f = 1:size(seq.s_frames, 1)
         if f>5
             if maxProb>0.8
                 %if (norm(pf_v-nf_v,1)>20 || norm((sign(pf_a)-sign(nf_a)))~=0)
-                if (norm(pf_v-nf_v,1)>30 )
+                if (norm(pf_v-nf_v,1)>50 )
                     p=nf_p
-                    %                     maxProb=0.8;
+%                     maxProb=0.8;
                 else
                     p=pf_p;
                 end
             else
                 p=nf_p;
+%                 maxProb=0.8; 
             end
         else
             p=pf_p;
