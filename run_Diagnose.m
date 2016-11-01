@@ -50,6 +50,8 @@ for f = 1:size(seq.s_frames, 1)
     %如果非第一帧
     if (f ~= 1)
         %第3步
+        
+    
         %运动模型，提取出可能存在目标的候选区域
         tmpl    = globalParam.MotionModel(tmpl, prob, seq.opt);
         %特征提取，提取所有候选区域的特征
