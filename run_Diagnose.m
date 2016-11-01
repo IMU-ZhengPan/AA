@@ -51,37 +51,16 @@ for f = 1:size(seq.s_frames, 1)
     if (f ~= 1)
         %第3步
         
-    
+        %粒子滤波
         %运动模型，提取出可能存在目标的候选区域
-        tmpl    = globalParam.MotionModel(tmpl, prob, seq.opt);
+        pf_tmpl    = globalParam.MotionModel(tmpl, prob, seq.opt);
         %特征提取，提取所有候选区域的特征
-        [feat, seq.opt] = globalParam.FeatureExtractor(frame, tmpl, seq.opt);
+        [pf_feat, seq.opt] = globalParam.FeatureExtractor(frame, pf_tmpl, seq.opt);
         %观测模型，计算每一特征的概率
-        prob    = globalParam.ObservationModelTest(feat, model);
+        pf_prob    = globalParam.ObservationModelTest(pf_feat, model);
         %筛选出概率最大位置，作为PF输出结果
-        [maxProb, maxIdx] = max(prob);
-        pf_p = tmpl(maxIdx, :);
-        
-        %选择PForNF
-        if f>5
-            if maxProb>0.8
-                %if (norm(pf_v-nf_v,1)>20 || norm((sign(pf_a)-sign(nf_a)))~=0)
-                if (norm(pf_v-nf_v,1)>50 )
-                    p=nf_p
-%                     maxProb=0.8;
-                else
-                    p=pf_p;
-                end
-            else
-                p=nf_p;
-%                 maxProb=0.8; 
-            end
-        else
-            p=pf_p;
-        end
-        
-        model.lastOutput = p;
-        model.lastProb = maxProb;
+        [pf_maxProb, pf_maxIdx] = max(pf_prob);
+        pf_p = tmpl(pf_maxIdx, :);
         
         %计算PF的v与a
         pf_v=pf_p(1,1:2)-front_p(1,1:2);
@@ -92,6 +71,72 @@ for f = 1:size(seq.s_frames, 1)
             pf_a=pf_v-init_pfa;
             init_pfa=pf_v;
         end
+        
+        
+        
+        if f>6
+            %根据prob判断
+            if pf_maxProb>0.8
+                if (norm(pf_v-nf_v,1)>50 )
+                    if nf_maxProb>pf_maxProb
+                        tmpl=nf_tmpl;
+                        feat=nf_feat;
+                        prob=nf_prob;
+                        maxProb=nf_maxProb;
+                        p=nf_pp;
+                    else
+                        %PF
+                        tmpl=pf_tmpl;
+                        feat=pf_feat;
+                        prob=pf_prob;
+                        maxProb=pf_maxProb;
+                        p=pf_p ;
+                    end
+                else
+                    %PF
+                    tmpl=pf_tmpl;
+                    feat=pf_feat;
+                    prob=pf_prob;
+                    maxProb=pf_maxProb;
+                    p=pf_p ;
+                end
+            else
+                %NF
+                tmpl=nf_tmpl;
+                feat=nf_feat;
+                prob=nf_prob;
+                maxProb=nf_maxProb;
+                p=nf_pp ;
+            end
+        else
+            %PF
+            tmpl=pf_tmpl;
+            feat=pf_feat;
+            prob=pf_prob;
+            maxProb=pf_maxProb;
+            p=pf_p ;
+        end
+        
+        %         %选择PForNF
+        %         if f>5
+        %             if maxProb>0.8
+        %                 %if (norm(pf_v-nf_v,1)>20 || norm((sign(pf_a)-sign(nf_a)))~=0)
+        %                 if (norm(pf_v-nf_v,1)>50 )
+        %                     p=nf_p
+        %                      maxProb=0.8;
+        %                 else
+        %                     p=pf_p;
+        %                 end
+        %             else
+        %                 p=nf_p;
+        %                  maxProb=0.8;
+        %             end
+        %         else
+        %             p=pf_p;
+        %         end
+        model.lastOutput = p;
+        model.lastProb = maxProb;
+       
         
         %添加物理特征
         if(f==3)
@@ -129,8 +174,25 @@ for f = 1:size(seq.s_frames, 1)
             %此处需修改
             nf_p=[nf_p_v,front_p(1,3),front_p(1,4)];
         end
+        %运动特征
+        %运动模型，提取出可能存在目标的候选区域
+        if f>5
+            if pf_maxProb<0.8
+                prob=0.8;
+                nf_tmpl    = globalParam.MotionModel(nf_p, prob, seq.opt);
+            else
+                nf_tmpl    = globalParam.MotionModel(nf_p, pf_maxProb, seq.opt);
+            end
+            %特征提取，提取所有候选区域的特征
+            [nf_feat, seq.opt] = globalParam.FeatureExtractor(frame, nf_tmpl, seq.opt);
+            %观测模型，计算每一特征的概率
+            nf_prob    = globalParam.ObservationModelTest(nf_feat, model);
+            %筛选出概率最大位置，作为PF输出结果
+            [nf_maxProb, nf_maxIdx] = max(nf_prob);
+            nf_pp = tmpl(nf_maxIdx, :);
+        end
         
-        maxProb
+        
         %保存当前帧p
         front_p=p;
         
